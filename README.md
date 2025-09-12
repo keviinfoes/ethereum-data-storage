@@ -11,11 +11,17 @@ Add private key and quicknode rpc urls to environment variables, for reference c
 ```python3 -m pip install -r requirements.txt```
 
 ### Deploy dApp
-Only use ENS names owned by the private key.
+Only use ENS names owned by the private key. Blob upload only tested with quicknodes rpc. 
 
 ```python3 deploy.py```
 
 ### Retrieve dApp
-The retrieve script starts the downloaded bApp from a flask server, only tested with reactjs builds and quicknodes rpc. 
+Blob download only tested with quicknodes rpc. 
 
 ```python3 retrieve.py```
+
+
+### Run dApp
+Starts the downloaded bApp from a flask server, only tested with reactjs builds. 
+
+```python3 run.py```

@@ -1,105 +1,63 @@
 import os
-import shutil
 import io
-import json
-import idna
-import ckzg
-import hashlib
+import shutil
+import deploy_blobs
+import deploy_calldata
 
-from dotenv import load_dotenv
-from eth_abi import abi
-from eth_utils import to_hex
-from web3 import HTTPProvider, Web3
-from ens import ENS
-from hexbytes import HexBytes
 from pathlib import Path
 
-load_dotenv()
+from web3 import HTTPProvider, Web3
+from eth_abi import abi
 
-#Load rpc
+#Env input
 rpc_execution_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
 w3 = Web3(HTTPProvider(rpc_execution_url))
-ns = ENS.from_web3(w3)
 
-#Input
-# blob data
-max_blobs_txt = 6
-
-# txt data
-private_key = os.getenv("SEPOLIA_PRIVATE_KEY")
-chain_id = 11155111 #sepolia id  
-maxFeePerGas = 10**9
-maxPriorityFeePerGas = 10**9
-maxFeePerBlobGas = to_hex(10**9)
-to = '0x0000000000000000000000000000000000000000'
-
-# ens data
-ens_address = "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD" #sepolia address
+#Calldata storage contract
+text = "Calldata storage"
+storage_address = w3.to_checksum_address("0x00000000"+text.encode().hex())
+storage_abi = '[{"inputs":[{"internalType":"bytes","name":"data","type":"bytes"}],"name":"store","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
+storage = w3.eth.contract(address=storage_address, abi=storage_abi)
 
 #User input
-ens_name = input("ENS name: ")
-bapp_version = input("bApp version: ")
-dApp_location = input("location bApp build: ")
+folder_location = input("location folder: ")
 
-#Setup ENS
-# ens connector functions
-def normalize_name(name: str) -> str:
-    if not name:
-        return name
-    elif isinstance(name, (bytes, bytearray)):
-        name = name.decode("utf-8")
-    try:
-        return idna.uts46_remap(name, std3_rules=True, transitional=False)
-    except idna.IDNAError as exc:
-        raise InvalidName(f"{name} is an invalid name, because {exc}") from exc
+#Get gasprice
+base_gas_price = w3.eth.fee_history(1, 'latest')
 
-EMPTY_SHA3_BYTES = HexBytes(b"\0" * 32)
-
-def label_to_hash(label: str) -> HexBytes:
-    label = normalize_name(label)
-    if "." in label:
-        raise ValueError(f"Cannot generate hash for label {label!r} with a '.'")
-    return Web3().keccak(text=label)
-
-def normal_name_to_hash(name: str) -> HexBytes:
-    node = EMPTY_SHA3_BYTES
-    if name:
-        labels = name.split(".")
-        for label in reversed(labels):
-            labelhash = label_to_hash(label)
-            assert isinstance(labelhash, bytes)
-            assert isinstance(node, bytes)
-            node = Web3().keccak(node + labelhash)
-    return node
-
-def raw_name_to_hash(name: str) -> HexBytes:
-    normalized_name = normalize_name(name)
-    return normal_name_to_hash(normalized_name)
-
-# load ens rpc
-with open("shared/PublicResolver.json") as f:
-    d = json.load(f)
-
-ens_abi = d['abi']
-resolver_instance = w3.eth.contract(address=ens_address, abi=ens_abi)
-
-#Deploy dApp to blobs
-print("encoding bApp blobs")
-# zip dApp folder
-shutil.make_archive('dApp', 'zip', dApp_location)
-
-# convert zip to txt
-p = Path('./dApp.zip')
+#Generate data
+shutil.make_archive('folder', 'zip', folder_location)
+p = Path('./folder.zip')
 p.rename(p.with_suffix('.txt'))
 
-# load txt and create blobs
-with io.open("./dApp.txt", 'rb') as f:
+with io.open("./folder.txt", 'rb') as f:
     file = f.read()
     hex_file = file.hex()
 
-ts = ckzg.load_trusted_setup("shared/trusted_setup.txt", 0)
-blob_hash = []
-blob_positions = []
+#Estimate gascost calldata
+DATA = []
+i = 0
+split = 128000
+encoded_calldata = abi.encode(["bytes"], [file])
+while i < (len(encoded_calldata) // split):
+    DATA.append(encoded_calldata[i*split : (i+1) * split])
+    i += 1
+if (len(encoded_calldata) % split != 0):
+    DATA.append(encoded_calldata[i*split : ])
+
+gas_estimate = 0
+nonce = w3.eth.get_transaction_count("0x0000000000000000000000000000000000000000")
+for x, data in enumerate(DATA):
+    storage_txt = storage.functions.store(data).build_transaction({
+        "from": "0x0000000000000000000000000000000000000000",
+        "nonce": nonce + x,
+    })
+    gas_estimate += w3.eth.estimate_gas(storage_txt)
+
+gas_cost_calldata = gas_estimate * base_gas_price.baseFeePerGas[1]
+print(f"\nbase gascost estimate permanent: ~{w3.from_wei(gas_cost_calldata, 'ether')} ETH")
+
+#Estimate gascost blobs
 BLOB_DATA = []
 blob_size = 131072
 split = 131008
@@ -107,109 +65,30 @@ i = 0
 while i < (len(hex_file) // split):
     encoded = abi.encode(["string"], [hex_file[i*split : (i+1) * split]])
     BLOB_DATA.append(encoded)
-    # store blob meta
-    calc_commitment = ckzg.blob_to_kzg_commitment(encoded, ts)
-    sha256_hash = hashlib.sha256(calc_commitment).digest()
-    versioned_hash = b'\x01' + sha256_hash[1:]
-    blob_hash.append(versioned_hash.hex())
-    blob_positions.append(["0", str(blob_size)])
     i += 1
 if (len(hex_file) % split != 0):
     encoded = abi.encode(["string"], [hex_file[i*split : ]])
     required_padding = blob_size - (len(encoded) % blob_size)
     BLOB_DATA.append((b"\x00" * required_padding) + encoded)
-    # store blob meta
-    calc_commitment = ckzg.blob_to_kzg_commitment((b"\x00" * required_padding) + encoded, ts)
-    sha256_hash = hashlib.sha256(calc_commitment).digest()
-    versioned_hash = b'\x01' + sha256_hash[1:]
-    blob_hash.append(versioned_hash.hex())
-    blob_positions.append([str(required_padding) , str(blob_size)])
 
-# create blob txt
-acct = w3.eth.account.from_key(private_key)
-nonce = w3.eth.get_transaction_count(acct.address)
-SIG_TXT = []
-i = 0
-while i < (len(BLOB_DATA) // max_blobs_txt):
-    tx = {
-        "type": 3,
-        "chainId": chain_id,  
-        "from": acct.address,
-        "to": to,
-        "value": 0,
-        "maxFeePerGas": maxFeePerGas,
-        "maxPriorityFeePerGas": maxPriorityFeePerGas,
-        "maxFeePerBlobGas": maxFeePerBlobGas,
-        "nonce": nonce + i,
-    }
-    blob_input = BLOB_DATA[i*max : (i+1)*max_blobs_txt]
-    gas_estimate = w3.eth.estimate_gas(tx)
-    tx["gas"] = gas_estimate
-    signed = acct.sign_transaction(tx, blobs=blob_input)
-    SIG_TXT.append(signed)
-    i += 1
-if (len(BLOB_DATA) % max_blobs_txt != 0):
-    tx = {
-        "type": 3,
-        "chainId": chain_id,  
-        "from": acct.address,
-        "to": to,
-        "value": 0,
-        "maxFeePerGas": maxFeePerGas,
-        "maxPriorityFeePerGas": maxPriorityFeePerGas,
-        "maxFeePerBlobGas": maxFeePerBlobGas,
-        "nonce": nonce + i,
-    }
-    blob_input = BLOB_DATA[i*max_blobs_txt : (i+1)*max_blobs_txt]
-    gas_estimate = w3.eth.estimate_gas(tx)
-    tx["gas"] = gas_estimate
-    signed = acct.sign_transaction(tx, blobs=blob_input)
-    SIG_TXT.append(signed)
+number_blobs = len(BLOB_DATA)
+blob_gas = 131072 * number_blobs 
+txt_cost = 21000 * base_gas_price.baseFeePerGas[1]
+blob_cost = blob_gas * int(base_gas_price.baseFeePerBlobGas[1], 16)
+print(f"base gascost estimate temporary: ~{w3.from_wei(blob_cost + txt_cost, 'ether')} ETH")
+ 
+ratio = gas_cost_calldata / (blob_cost + txt_cost) 
+if ratio > 1:
+    print(f"current temporary storage is: ~{round(ratio)}x cheaper")
+else:
+    print(f"current temporary storage is: ~{round(1/ratio)}x more expensive")
 
-# send blobs txt to network
-print("storing bApp blobs")
-block_numbers = []
-for x, txt in enumerate(SIG_TXT):
-    tx_hash = w3.eth.send_raw_transaction(txt.raw_transaction)
-    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print(f"TransactionHash: {'0x'+tx_receipt.transactionHash.hex()}")
-    i = 0
-    while i < len(BLOB_DATA[x*max_blobs_txt: (x+1)*max_blobs_txt]):
-        block_numbers.append(tx_receipt.blockNumber)
-        i += 1   
+print("\nDo you want to store the data:\n [1] permanent\n [2] temporary (~18 days)\n")
+response = None
+while response not in {"1", "2"}:
+    response = input("Please type 1 or 2: ")
 
-#Store blob data in ENS
-assert len(block_numbers) != 0
-assert len(blob_hash) != 0
-assert len(blob_positions) != 0
-assert len(block_numbers) == len(blob_hash) == len(blob_positions)
-
-# create ens setText txt
-print("updating ENS bApp link")
-node = raw_name_to_hash(ens_name)
-key = "bapp" 
-value = {}
-value['version'] = bapp_version
-value['block_number'] = block_numbers
-value['blob_hash'] = blob_hash
-value['blob_position'] = blob_positions
-json_value = json.dumps(value)
-
-transaction = resolver_instance.functions.setText(node, key, json_value).build_transaction({"from": acct.address})
-signed_txn = w3.eth.account.sign_transaction(dict(
-    nonce=w3.eth.get_transaction_count(acct.address),
-    maxFeePerGas=transaction.get('maxFeePerGas'),
-    maxPriorityFeePerGas=transaction.get('maxPriorityFeePerGas'),
-    gas=transaction.get('gas'),
-    to=transaction.get('to'),
-    value=transaction.get('value'),
-    data=transaction.get('data'),
-    chainId=transaction.get('chainId'),
-), private_key)
-print("TransactionHash: 0x"+w3.eth.send_raw_transaction(signed_txn.raw_transaction).hex())
-
-os.remove("./dApp.txt")
-
-
-
-
+if response == "1":
+    deploy_calldata.deploy_calldata()
+elif response == "2":
+    deploy_blobs.deploy_blobs()
