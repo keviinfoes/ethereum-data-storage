@@ -1,5 +1,5 @@
-# Blob storage dApp
-Deploy and retrieve dApps from blob storage (bApp). 
+# Ethereum data storage
+Deploy and retrieve files from permanent (calldata) storage or temporary (blob) storage. 
 
 >[!WARNING]
 Network: ethereum sepolia testnet.
@@ -10,18 +10,22 @@ Add private key and quicknode rpc urls to environment variables, for reference c
 ### Install Dependencies
 ```python3 -m pip install -r requirements.txt```
 
-### Deploy dApp
+### Deploy data
 Only use ENS names owned by the private key. Blob upload only tested with quicknodes rpc. 
 
 ```python3 deploy.py```
 
-### Retrieve dApp
+### Store ENS link
+Only use ENS names owned by the private key.
+
+```python3 store.py```
+
+### Retrieve data
 Blob download only tested with quicknodes rpc. 
 
 ```python3 retrieve.py```
 
-
-### Run dApp
-Starts the downloaded bApp from a flask server, only tested with reactjs builds. 
+### Run app build
+Flask server that runs downloaded build folders. Only tested with reactjs builds. 
 
 ```python3 run.py```
