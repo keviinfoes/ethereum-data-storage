@@ -5,7 +5,7 @@ Deploy and retrieve files from permanent (calldata) storage or temporary (blob) 
 Network: ethereum sepolia testnet.
 
 ## Getting started
-Add private key and quicknode rpc urls to environment variables, for reference check .env_example file. 
+Add private key and rpc urls to environment variables, for reference check .env_example file. 
 
 ### Install Dependencies
 ```python3 -m pip install -r requirements.txt```
