@@ -5,7 +5,7 @@ from threading import Timer
 
 #User input
 name_example = 'hellosepolia.eth'
-name = input("ENS name [empty for bapp.eth example]: ")
+name = input("ENS name [empty for hellosepolia.eth example]: ")
 if name == "":
     name = name_example
 

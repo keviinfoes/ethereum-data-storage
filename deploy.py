@@ -20,7 +20,11 @@ storage_abi = '[{"inputs":[{"internalType":"bytes","name":"data","type":"bytes"}
 storage = w3.eth.contract(address=storage_address, abi=storage_abi)
 
 #User input
-folder_location = input("location folder: ")
+current_directory = os.getcwd()
+folder_location_example = current_directory + "/example"
+folder_location = input("Folder location [empty for /example]: ")
+if folder_location == "":
+    folder_location = folder_location_example
 
 #Get gasprice
 base_gas_price = w3.eth.fee_history(1, 'latest')

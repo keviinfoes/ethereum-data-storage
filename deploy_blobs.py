@@ -27,7 +27,7 @@ def deploy_blobs():
     chain_id = 11155111 #sepolia id  
     maxFeePerGas = 10**9
     maxPriorityFeePerGas = 10**9
-    maxFeePerBlobGas = to_hex(10**9)
+    maxFeePerBlobGas = to_hex(10**12)
     
     text = "Blob storage"
     to = w3.to_checksum_address("0x0000000000000000"+text.encode().hex())

@@ -11,7 +11,7 @@ Add private key and quicknode rpc urls to environment variables, for reference c
 ```python3 -m pip install -r requirements.txt```
 
 ### Deploy data
-Only use ENS names owned by the private key. Blob upload only tested with quicknodes rpc. 
+Only use ENS names owned by the private key. Deploy tested with local and quicknodes rpc. 
 
 ```python3 deploy.py```
 
@@ -21,11 +21,11 @@ Only use ENS names owned by the private key.
 ```python3 store.py```
 
 ### Retrieve data
-Blob download only tested with quicknodes rpc. 
+Retrieve tested with local and quicknodes rpc. 
 
 ```python3 retrieve.py```
 
 ### Run app build
-Flask server that runs downloaded build folders. Only tested with reactjs builds. 
+Flask server that runs downloaded build folders. Tested with reactjs builds. 
 
 ```python3 run.py```
