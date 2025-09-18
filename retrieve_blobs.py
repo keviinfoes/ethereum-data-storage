@@ -39,7 +39,6 @@ def retrieve_blobs(ens_name, blobs_json):
                 for tx_hash in type_3_tx_hashes:
                     tx_details = w3.eth.get_transaction(tx_hash)
                     blob_versioned_hashes = tx_details.get('blobVersionedHashes', [])
-                    temp_hash = []
                     for hashes in blob_versioned_hashes:
                         blob_versioned_hashes_dict[hashes.hex()] = tx_hash
 

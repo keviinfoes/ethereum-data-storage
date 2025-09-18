@@ -55,11 +55,33 @@ def deploy_calldata():
             "from": acct.address,
             "nonce": nonce + x,
         })
-        signed = w3.eth.account.sign_transaction(storage_txt, private_key=acct.key)
-        hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-        w3.eth.wait_for_transaction_receipt(hash)
-        txt_hash.append(hash.hex())
-        print(f"TransactionHash {x}: {'0x'+hash.hex()}")
+        print(f"\ntxt {x} max priority fee: {storage_txt['maxPriorityFeePerGas']} wei per gas")
+        print(f"txt {x} max total fee: {storage_txt['maxFeePerGas']} wei per gas")
+        print("\nDo you accept the max per gas fees")
+        response = None
+        while response not in {"yes", "no"}:
+            response = input("Please type yes or no: ")
+        if response == "yes":
+            signed = w3.eth.account.sign_transaction(storage_txt, private_key=acct.key)
+            hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            w3.eth.wait_for_transaction_receipt(hash)
+            txt_hash.append(hash.hex())
+            print(f"TransactionHash {x}: {'0x'+hash.hex()}")
+        elif response == "no":
+            maxPriority = input("new max priority fee in wei: ")
+            maxFee = input("new max total fee in wei: ")
+            storage_txt = storage.functions.store(data).build_transaction({
+                "from": acct.address,
+                "nonce": nonce + x,
+                "maxPriorityFeePerGas": int(maxPriority),
+                "maxFeePerGas": int(maxFee),
+
+            })
+            signed = w3.eth.account.sign_transaction(storage_txt, private_key=acct.key)
+            hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            w3.eth.wait_for_transaction_receipt(hash)
+            txt_hash.append(hash.hex())
+            print(f"TransactionHash {x}: {'0x'+hash.hex()}")
 
     os.remove("./folder.txt")   
 
