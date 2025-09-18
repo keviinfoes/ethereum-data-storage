@@ -10,7 +10,7 @@ from web3 import HTTPProvider, Web3
 from eth_abi import abi
 
 #Env input
-rpc_execution_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+rpc_execution_url = os.getenv("EXECUTION_QUICKNODE")
 w3 = Web3(HTTPProvider(rpc_execution_url))
 
 #Calldata storage contract

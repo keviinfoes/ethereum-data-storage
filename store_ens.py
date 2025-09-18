@@ -5,15 +5,17 @@ import json
 from dotenv import load_dotenv
 from hexbytes import HexBytes
 from web3 import HTTPProvider, Web3
+from ens import ENS
 
 load_dotenv()
 
 def ens_store(link_data):
     #Load rpc
-    rpc_execution_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+    rpc_execution_url = os.getenv("EXECUTION_QUICKNODE")
     w3 = Web3(HTTPProvider(rpc_execution_url))
+    ns = ENS.from_web3(w3)
 
-    private_key = os.getenv("SEPOLIA_PRIVATE_KEY")
+    private_key = os.getenv("PRIVATE_KEY")
     acct = w3.eth.account.from_key(private_key)
 
     #Setup ENS
@@ -51,13 +53,7 @@ def ens_store(link_data):
         normalized_name = normalize_name(name)
         return normal_name_to_hash(normalized_name)
 
-    # load ens rpc
-    with open("shared/PublicResolver.json") as f:
-        d = json.load(f)
-    ens_address = "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD" #sepolia address
-    ens_abi = d['abi']
-    resolver_instance = w3.eth.contract(address=ens_address, abi=ens_abi)
-
+    resolver = ns.resolver(link_data['name'])
     node = raw_name_to_hash(link_data['name'])
     if(link_data['type'] == "calldata"):
         key = "EDSc"
@@ -72,7 +68,7 @@ def ens_store(link_data):
     json_value = json.dumps(link_data)
 
     #ENS setText   
-    transaction = resolver_instance.functions.setText(node, key, json_value).build_transaction({"from": acct.address})
+    transaction = resolver.functions.setText(node, key, json_value).build_transaction({"from": acct.address})
     signed_txn = w3.eth.account.sign_transaction(dict(
         nonce=w3.eth.get_transaction_count(acct.address),
         maxFeePerGas=transaction.get('maxFeePerGas'),

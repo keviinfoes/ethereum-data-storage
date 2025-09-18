@@ -10,7 +10,7 @@ load_dotenv()
 
 def retrieve_calldata(ens_name, calldata_json):
     #Load rpc
-    rpc_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+    rpc_url = os.getenv("EXECUTION_QUICKNODE")
     w3 = Web3(HTTPProvider(rpc_url))    
 
     #Storage link

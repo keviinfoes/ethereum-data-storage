@@ -15,7 +15,7 @@ load_dotenv()
 
 def deploy_blobs():
     #Load rpc
-    rpc_execution_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+    rpc_execution_url = os.getenv("EXECUTION_QUICKNODE")
     w3 = Web3(HTTPProvider(rpc_execution_url))
 
     #Input
@@ -23,8 +23,8 @@ def deploy_blobs():
     max_blobs_txt = 6
 
     # txt data
-    private_key = os.getenv("SEPOLIA_PRIVATE_KEY")
-    chain_id = 11155111 #sepolia id  
+    private_key = os.getenv("PRIVATE_KEY")
+    chain_id = w3.eth.chain_id  
     maxFeePerGas = 10**9
     maxPriorityFeePerGas = 10**9
     maxFeePerBlobGas = to_hex(10**12)

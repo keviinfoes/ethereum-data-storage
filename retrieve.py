@@ -8,13 +8,13 @@ from web3 import Web3, HTTPProvider
 from ens import ENS
 
 #Env input
-rpc_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+rpc_url = os.getenv("EXECUTION_QUICKNODE")
 w3 = Web3(HTTPProvider(rpc_url))
 ns = ENS.from_web3(w3)
 
 #User input
 ens_name_example = 'hellosepolia.eth'
-ens_name = input("ENS name [empty for hellosepolia.eth example]: ")
+ens_name = input("ENS name [empty for hellosepolia.eth]: ")
 if ens_name == "":
     ens_name = ens_name_example
 

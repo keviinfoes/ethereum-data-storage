@@ -13,10 +13,10 @@ load_dotenv()
 
 def deploy_calldata():
     #Load rpc
-    rpc_execution_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+    rpc_execution_url = os.getenv("EXECUTION_QUICKNODE")
     w3 = Web3(HTTPProvider(rpc_execution_url))
 
-    private_key = os.getenv("SEPOLIA_PRIVATE_KEY")
+    private_key = os.getenv("PRIVATE_KEY")
     acct = w3.eth.account.from_key(private_key)
 
     # storage contract data

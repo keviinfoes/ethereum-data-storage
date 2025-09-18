@@ -13,7 +13,7 @@ load_dotenv()
 
 def retrieve_blobs(ens_name, blobs_json):
     #Load rpc
-    rpc_url = os.getenv("SEPOLIA_EXECUTION_QUICKNODE")
+    rpc_url = os.getenv("EXECUTION_QUICKNODE")
     w3 = Web3(HTTPProvider(rpc_url))
 
     block_numbers = list(map(int, blobs_json['block_number']))
@@ -48,7 +48,7 @@ def retrieve_blobs(ens_name, blobs_json):
                     parent_beacon_block_root = '0x' + parent_beacon_block_root
 
                 # Consensus layer: retrieve slot info
-                headers_url = f"{os.getenv('SEPOLIA_CONSENSUS_QUICKNODE')}/eth/v1/beacon/headers/{parent_beacon_block_root}"
+                headers_url = f"{os.getenv('CONSENSUS_QUICKNODE')}/eth/v1/beacon/headers/{parent_beacon_block_root}"
                 header_response = requests.get(headers_url)
                 if header_response.status_code != 200:
                     print("Failed to fetch data:", header_response.status_code)
@@ -61,7 +61,7 @@ def retrieve_blobs(ens_name, blobs_json):
                 slot_number = int(header_data['data']['header']['message']['slot']) + 1
 
                 # Consensus layer: Retrieve blobs
-                blobs_url = f"{os.getenv('SEPOLIA_CONSENSUS_QUICKNODE')}/eth/v1/beacon/blob_sidecars/{slot_number}"
+                blobs_url = f"{os.getenv('CONSENSUS_QUICKNODE')}/eth/v1/beacon/blob_sidecars/{slot_number}"
                 blobs_response = requests.get(blobs_url)
                 if blobs_response.status_code != 200:
                     print("Failed to fetch data:", blobs_response.status_code)
