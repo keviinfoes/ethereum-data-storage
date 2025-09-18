@@ -1,9 +1,6 @@
 # Ethereum data storage
 Deploy and retrieve files from permanent (calldata) storage or temporary (blob) storage. 
 
->[!WARNING]
-Network: ethereum sepolia testnet.
-
 ## Getting started
 Add private key and rpc urls to environment variables, for reference check .env_example file. 
 
