@@ -2,7 +2,7 @@
 Deploy and retrieve files from permanent (calldata) storage or temporary (blob) storage. 
 
 ## Getting started
-Add private key and RPC to environment variables, for reference check .env_example. Tested with local and QuickNodes RPC. 
+Add private key and RPC to environment variables, for reference check .env_example. 
 
 >[!CAUTION]
 The private key is ONLY required for deployment. It is unencryped and exposed to your machine, be extremely careful. 

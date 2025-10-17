@@ -32,7 +32,7 @@ def deploy_calldata():
     #Deploy folder to calldata
     print("encoding calldata")
 
-    # load txt and create blobs
+    # load txt and split data for max txt (gas) size
     with io.open("./folder.txt", 'rb') as f:
         file = f.read()
     encode = abi.encode(["bytes"], [file])

@@ -26,8 +26,8 @@ def deploy_blobs():
     private_key = os.getenv("PRIVATE_KEY")
     chain_id = w3.eth.chain_id  
     maxFeePerGas = 10**9
-    maxPriorityFeePerGas = 10**9
-    maxFeePerBlobGas = to_hex(10**12)
+    maxPriorityFeePerGas = 10**4
+    maxFeePerBlobGas = to_hex(10**9)
     
     text = "Blob storage"
     to = w3.to_checksum_address("0x0000000000000000"+text.encode().hex())
@@ -116,8 +116,7 @@ def deploy_blobs():
                 "nonce": nonce + i,
             }
         blob_input = BLOB_DATA[i*max : (i+1)*max_blobs_txt]
-        gas_estimate = w3.eth.estimate_gas(tx)
-        tx["gas"] = gas_estimate
+        tx["gas"] = 21000
         signed = acct.sign_transaction(tx, blobs=blob_input)
         SIG_TXT.append(signed)
         i += 1
@@ -160,8 +159,7 @@ def deploy_blobs():
                 "nonce": nonce + i,
             }
         blob_input = BLOB_DATA[i*max_blobs_txt : (i+1)*max_blobs_txt]
-        gas_estimate = w3.eth.estimate_gas(tx)
-        tx["gas"] = gas_estimate
+        tx["gas"] = 21000
         signed = acct.sign_transaction(tx, blobs=blob_input)
         SIG_TXT.append(signed)
 
